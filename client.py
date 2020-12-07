@@ -74,20 +74,20 @@ class Client():
                 #guardar en el f.chord
                 #TODO send to a node
                 #get number of the hash and send? this can do it the node
-                ip_to_send = self.findSuccesor(parthash, address_to_connect)
-                print(ip_to_send)
+                self.findSuccesor(parthash, address_to_connect, partbytes)
+                #print(ip_to_send)
 
-                socket = self.context.socket(zmq.REQ)
+                """ socket = self.context.socket(zmq.REQ)
                 socket.connect("tcp://{}".format(ip_to_send))
                 
                 socket.send_multipart([b'upload', parthash.encode('utf-8'), partbytes])
                 resp = socket.recv_json()
                 print(resp['message'])
-                socket.close()
+                socket.close() """
  
-    def findSuccesor(self, hash, address_to_connect):
+    def findSuccesor(self, hash, address_to_connect, partbytes):
         print("connect with node")
-        ip_successor = ''
+        #ipSend = ''
         socket = self.context.socket(zmq.REQ)
         socket.connect("tcp://{}".format(address_to_connect))
         
@@ -95,16 +95,23 @@ class Client():
         resp = socket.recv_json()
         print(resp)
         if resp['response'] == "true":
-            ip_successor = resp['ip']
+            ipSend = resp['ip']
+            print(ipSend)
             print('--- Encontre nodo')
+            #socket = self.context.socket(zmq.REQ)
+            #socket.connect("tcp://{}".format(ip_to_send))
+            
+            socket.send_multipart([b'upload', hash.encode('utf-8'), partbytes])
+            resp = socket.recv_json()
+            print(resp['message'])
+            socket.close()
         else:
             print('entre al else d findSuccessor')
-            ip_successor = resp['ip']
-            print(ip_successor)
+            #ip_successor = resp['ip']
+            print('ip_successor: ' + resp['ip'])
             #ip of successor
-            self.findSuccesor(hash,resp['ip'])
+            self.findSuccesor(hash,resp['ip'], partbytes)
 
-        return ip_successor
 
     def complethash(self,filename):
         #TODO save complethash in f.chord

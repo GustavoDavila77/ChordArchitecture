@@ -10,6 +10,9 @@
 #node 3 
 # python nodo.py localhost:4000 localhost:7000 6 50 none
 
+#client
+# python client.py upload underground.mp4 localhost:4000
+
 import zmq
 import os
 import json
@@ -181,17 +184,15 @@ class FServer():
             elif message[0] == b'responsible':
                 #capture client hash, convert to number and analize if is myrange
                 #print('into responsible')
+                #TODO This part in client
+                #TODO integrate random number in nodo
                 numberHash =  int(message[1],16)
                 print(type(numberHash))
                 print(numberHash)
-                testNumber = 17
+                testNumber = 45
                 self.isMyResponsability(socket, testNumber)
 
-            elif message[0] == b'idnumber':
-                self.idNumber(socket)
-
-            elif message[0] == b'upload':
-                
+            elif message[0] == b'upload':  
                 name_parthash = message[1].decode('utf-8')
                 print("name_parthash: {}".format(name_parthash))
                 
@@ -259,7 +260,6 @@ class FServer():
         ip_successor = servers_dict['successor']
         id_server = int(servers_dict['id_server'])
         
-        #TODO this code put in a function
         #verified if node is first in connect to chord
         if (number_predecessor == int(self.number_server)) and (number_successor == int(self.number_server)):
             print("First node in connect")
@@ -270,12 +270,12 @@ class FServer():
             servers_dict['number_successor'] = number_node
             json.dump(servers_dict, f, indent=4)
             f.close()
-            #TODO in node request, update info_server too
             socket.send_json({"response": "true", "successor": "", "ip": self.ip_and_port, "number": self.number_server, "first": 'true'})
         
         else:
 
             if int(number_node) > number_predecessor and int(number_node) <= id_server:
+                #TODO this code put in a function
                 print("esta en el rango")
                 f = open('info_server.json','w')
                 servers_dict['predecessor'] = address_request
@@ -293,7 +293,6 @@ class FServer():
                 json.dump(servers_dict, f, indent=4)
                 f.close()
                 socket.send_json({"response": "true", "successor": "", "ip": self.ip_and_port, "number": self.number_server, "first": 'false', "predecessor": ip_predecessor, "number_predecessor": number_predecessor})
-                
             else:
                 print("no esta en el rango")
                 socket.send_json({"response": "false", "ip_successor": ip_successor, "first": 'false'}) 

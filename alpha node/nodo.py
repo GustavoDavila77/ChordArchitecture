@@ -189,7 +189,7 @@ class FServer():
                 numberHash =  int(message[1],16)
                 print(type(numberHash))
                 print(numberHash)
-                testNumber = 17
+                testNumber = 45
                 self.isMyResponsability(socket, testNumber)
 
             elif message[0] == b'upload':  
