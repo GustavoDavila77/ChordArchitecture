@@ -1,9 +1,3 @@
 {
-    "id_server": "30",
-    "ip": "localhost",
-    "port": "6000",
-    "successor": "localhost:7000",
-    "number_successor": "37",
-    "predecessor": "localhost:4000",
-    "number_predecessor": 20
+    
 }

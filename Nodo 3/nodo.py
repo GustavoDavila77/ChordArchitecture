@@ -1,14 +1,18 @@
 #comand
 # python nodo.py  none localhost:4000 6 20 alpha
 
-#node client
+#node
 # python nodo.py localhost:4000 localhost:5000 6 40 none
 
-import time
+#node 2 
+# python nodo.py localhost:5000 localhost:6000 6 30 none
+
+#node 3 
+# python nodo.py localhost:4000 localhost:7000 6 37 none
+
 import zmq
 import os
 import json
-from datetime import datetime
 import sys
 from random import choice
 import string
@@ -102,16 +106,17 @@ class FServer():
         f.close()    
     
     def findSuccessor(self, address_to_connect):
-        #code range of responsability
+        
         #recorrer anillo hasta conectarse
         print("connect with Ring..")
         socket = self.context.socket(zmq.REQ)
         socket.connect("tcp://{}".format(address_to_connect))
         #print("conectado")
-        #while resp[0] == 'ok' seguir buscando
+        
         socket.send_multipart([b'ringconnect', self.number_server.encode('utf-8'), self.ip_and_port.encode('utf-8')])
         resp = socket.recv_json()
 
+        #if is the first node in conect to ring
         if resp['first'] == 'true':
             print("two node in the ring")
             f = open('info_server.json','r')
@@ -152,11 +157,9 @@ class FServer():
             print("find new responsible")
             socket.close()
             self.findSuccessor(resp['ip_successor'])
-            #TODO Test recursive call to findSuccessor()
+            #TODO do recursive call to findSuccessor()
         
-
-        
-        print(resp)      
+        print(resp)     
 
 
     def receive(self,socket):
@@ -165,11 +168,11 @@ class FServer():
             message = socket.recv_multipart()
 
             if message[0] == b'ringconnect':
-
+                #TODO como se un numero me corresponde?
+                #se debe tener el número del predecesor para poder comparar
                 number_node = message[1].decode('utf-8')
                 address_request = message[2].decode('utf-8')
                 self.isMyRange(socket,number_node, address_request)
-            
             elif message[0] == b'newsuccessor':
                 ip_successor = message[1].decode('utf-8')
                 number_successor = message[2].decode('utf-8')
@@ -189,18 +192,6 @@ class FServer():
                 with open(dirserver + name_parthash, 'wb') as f:
                     f.write(message[2])
                     socket.send_string("Part upload!!")
-
-            elif message[0] == b'list':
-                user = message[1].decode('utf-8')
-                diruser = "D:\Escritorio\Arquitectura cliente servidor\code/files/"+user+"/"
-                directorio = os.listdir(diruser)
-                print(directorio)
-                archivos = []
-
-                for f in directorio:
-                    archivos.append(f.encode('utf-8'))
-
-                socket.send_multipart(archivos)
 
             elif message[0] == b'download':
                 part_hash = message[1].decode('utf-8')
@@ -230,6 +221,7 @@ class FServer():
         ip_successor = servers_dict['successor']
         id_server = int(servers_dict['id_server'])
         
+        #TODO this code put in a function
         #verified if node is first in connect to chord
         if (number_predecessor == int(self.number_server)) and (number_successor == int(self.number_server)):
             print("First node in connect")
@@ -241,7 +233,7 @@ class FServer():
             json.dump(servers_dict, f, indent=4)
             f.close()
             #TODO in node request, update info_server too
-            socket.send_json({"response": "true", "successor": ""})
+            socket.send_json({"response": "true", "successor": "", "ip": self.ip_and_port, "number": self.number_server, "first": 'true'})
         
         else:
 
@@ -251,11 +243,22 @@ class FServer():
                 servers_dict['predecessor'] = address_request
                 servers_dict['number_predecessor'] = number_node
                 json.dump(servers_dict, f, indent=4)
-                f.close() 
-                socket.send_json({"response": "true", "successor": "","ip": self.ip_and_port, "number": self.number_server, "first": 'false', "predecessor": ip_predecessor, "number_predecessor": number_predecessor})
+                f.close()
+                socket.send_json({"response": "true", "successor": "", "ip": self.ip_and_port, "number": self.number_server, "first": 'false', "predecessor": ip_predecessor, "number_predecessor": number_predecessor})
+            
+            #si mi predecesor es mayor a mi id_server es porque mi node esta es respon del border
+            elif number_predecessor > id_server:
+                print("esta en el rango")
+                f = open('info_server.json','w')
+                servers_dict['predecessor'] = address_request
+                servers_dict['number_predecessor'] = number_node
+                json.dump(servers_dict, f, indent=4)
+                f.close()
+                socket.send_json({"response": "true", "successor": "", "ip": self.ip_and_port, "number": self.number_server, "first": 'false', "predecessor": ip_predecessor, "number_predecessor": number_predecessor})
+            
             else:
-                print("no esta en el rango") 
-                socket.send_json({"response": "false", "ip_successor": ip_successor, "first": 'false'})
+                print("no esta en el rango")
+                socket.send_json({"response": "false", "ip_successor": ip_successor, "first": 'false'}) 
 
     def updateSuccessor(self, socket, ip_successor, number_successor):
         f = open('info_server.json','r')
@@ -267,6 +270,7 @@ class FServer():
         json.dump(servers_dict, f, indent=4)
         f.close() 
         socket.send_json({"response": "update ok"})
+
 
     def idNumber(self, socket):
         f = open('info_server.json','r')
