@@ -77,16 +77,10 @@ class Client():
                 #print(type(parthash))
                 #guardar en el f.chord
                 self.updateHashChord(filename, parthash)
+                print('parthash: '+parthash)
                 self.findSuccesor(parthash, address_to_connect, partbytes)
                 #print(ip_to_send)
 
-                """ socket = self.context.socket(zmq.REQ)
-                socket.connect("tcp://{}".format(ip_to_send))
-                
-                socket.send_multipart([b'upload', parthash.encode('utf-8'), partbytes])
-                resp = socket.recv_json()
-                print(resp['message'])
-                socket.close() """
  
     def findSuccesor(self, hash, address_to_connect, partbytes):
         print("connect with node")
@@ -121,7 +115,7 @@ class Client():
         f.close()
         f = open(name_file+".chord", "r")
         lines = f.readlines()
-        lines.insert(0,name_file)
+        lines.insert(0,filename)
         lines.insert(0,complete_hash+'\n')
         
         f.close()
