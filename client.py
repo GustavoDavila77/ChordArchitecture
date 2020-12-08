@@ -51,8 +51,7 @@ class Client():
             #TODO en la fun complethash guardar el hash en el f.chord
             self.createChord(filename,hash_whole_file)
             self.saveAndSendHashes(filename, address_to_connect)
-            #self.sendDataServers(info_send)
-            #socket.close()
+            self.sendChordRing(filename, address_to_connect)
             
         elif cmd == 'download':
             socket.connect("tcp://{}".format(sys.argv[4])) 
@@ -71,15 +70,9 @@ class Client():
                 if not partbytes:
                     break
                 parthash= self.hashobj.getHash(partbytes)
-                # numberHash =  int(parthash,16)
-                # print(type(numberHash))
-                # print(numberHash)
-                #print(type(parthash))
-                #guardar en el f.chord
                 self.updateHashChord(filename, parthash)
                 print('parthash: '+parthash)
                 self.findSuccesor(parthash, address_to_connect, partbytes)
-                #print(ip_to_send)
 
  
     def findSuccesor(self, hash, address_to_connect, partbytes):
@@ -127,6 +120,12 @@ class Client():
         filename =  name.split('.')[0]
         with open(filename+".chord", 'a') as f:
             f.write('\n'+hash)
+
+    def sendChordRing(self, name, address_to_connect):
+        filename = name.split('.')[0]
+        hashChord, completbytes = self.complethash(filename+'.chord')
+        print('Hash Chord: '+ hashChord)
+        self.findSuccesor(hashChord, address_to_connect, completbytes)
 
     def complethash(self,filename):
         #TODO save complethash in f.chord
