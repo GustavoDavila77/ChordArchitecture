@@ -53,6 +53,7 @@ class FServer():
                 print("join to ring")
                 self.saveServer()
                 self.findSuccessor(address_to_connect)
+
                 self.receive(socket)
 
 
@@ -176,23 +177,15 @@ class FServer():
                 self.updateSuccessor(socket, ip_successor, number_successor)
 
             elif message[0] == b'responsible':
-                #capture client hash, convert to number and analize if is myrange
-                #print('into responsible')
-                #TODO integrate random number in nodo
-                #numberHash = message[1].decode('utf-8')
                 numberHash =  int(message[1],16)
-                #print(type(numberHash))
                 print(numberHash)
-                #testNumber = 55
-                #testNumber = randrange(15,50)
-                #print('random number: '+ str(testNumber))
                 self.isMyResponsability(socket, numberHash)
 
             elif message[0] == b'upload':  
                 name_parthash = message[1].decode('utf-8')
                 print("name_parthash: {}".format(name_parthash))
                 
-                with open(name_parthash, 'wb') as f:
+                with open('files/'+name_parthash, 'wb') as f:
                     f.write(message[2])
                     socket.send_json({"message": "part upload!!"})
 
