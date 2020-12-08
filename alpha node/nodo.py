@@ -1,14 +1,14 @@
 #comand
-# python nodo.py  none localhost:4000 6 20 alpha
+# python nodo.py  none localhost:4000 6 alpha
 
 #node
-# python nodo.py localhost:4000 localhost:5000 6 40 none
+# python nodo.py localhost:4000 localhost:5000 6 none
 
 #node 2 
-# python nodo.py localhost:5000 localhost:6000 6 30 none
+# python nodo.py localhost:5000 localhost:6000 6 none
 
 #node 3 
-# python nodo.py localhost:4000 localhost:7000 6 50 none
+# python nodo.py localhost:4000 localhost:7000 6 none
 
 #client
 # python client.py upload underground.mp4 localhost:4000
@@ -17,7 +17,7 @@ import zmq
 import os
 import json
 import sys
-from random import choice
+from random import choice, randrange
 import string
 import hashlib
 import math
@@ -35,11 +35,12 @@ class FServer():
             self.ip_server = self.ip_and_port.split(':')[0]
             self.port_server = self.ip_and_port.split(':')[1]
             self.bits = sys.argv[3]
-            self.number_server = sys.argv[4]
-            self.type_server = sys.argv[5]
+            #self.number_server = sys.argv[4]
+            self.type_server = sys.argv[4]
 
-            #random_str = self.randomString(self.ip_and_port)
-            #self.id_server = int(self.hashString(random_str),16)
+            random_str = self.randomString(self.ip_and_port)
+            number_server_int = int(self.hashString(random_str),16)
+            self.number_server = str(number_server_int)
             #self.number_server = "37893173180865016123064796019639841985096597669"
 
             
@@ -75,13 +76,9 @@ class FServer():
         try:
             sys.argv[4]
         except:
-            print("Input id/number of server")
+            print("Input node type, if first node: type is alpha, else write whatever")
             boolean = False
-        try:
-            sys.argv[5]
-        except:
-            print("Input node type if first node: type is alpha")
-            boolean = False
+            
         return boolean
         
 
@@ -160,7 +157,6 @@ class FServer():
             print("find new responsible")
             socket.close()
             self.findSuccessor(resp['ip_successor'])
-            #TODO do recursive call to findSuccessor()
         
         print(resp)     
 
@@ -171,8 +167,6 @@ class FServer():
             message = socket.recv_multipart()
 
             if message[0] == b'ringconnect':
-                #TODO como se un numero me corresponde?
-                #se debe tener el número del predecesor para poder comparar
                 number_node = message[1].decode('utf-8')
                 address_request = message[2].decode('utf-8')
                 self.isMyRange(socket,number_node, address_request)
@@ -184,13 +178,15 @@ class FServer():
             elif message[0] == b'responsible':
                 #capture client hash, convert to number and analize if is myrange
                 #print('into responsible')
-                #TODO This part in client
                 #TODO integrate random number in nodo
+                #numberHash = message[1].decode('utf-8')
                 numberHash =  int(message[1],16)
-                print(type(numberHash))
+                #print(type(numberHash))
                 print(numberHash)
-                testNumber = 45
-                self.isMyResponsability(socket, testNumber)
+                #testNumber = 55
+                #testNumber = randrange(15,50)
+                #print('random number: '+ str(testNumber))
+                self.isMyResponsability(socket, numberHash)
 
             elif message[0] == b'upload':  
                 name_parthash = message[1].decode('utf-8')
@@ -217,36 +213,42 @@ class FServer():
                 socket.send_string("Error")
 
     def isMyResponsability(self, socket, numberHash):
-        #TODO this function, is similar to isMyRange
+        
         f = open('info_server.json','r')
         servers_dict = json.load(f)
         f.close()
         id_server = int(servers_dict['id_server'])
         number_predecessor = int(servers_dict['number_predecessor'])
+        number_successor = int(servers_dict['number_successor'])
         successor = servers_dict['successor']
         myip = servers_dict['ip']
         myport = servers_dict['port']
         mydir = myip + ':' + myport
         print('mydir: '+ mydir)
         
-        #TODO para la frontera, poner un condicional para ver si se encuentra en el rango d bits
+        #TODO para la frontera, poner un condicional para ver si se encuentra en el rango d bits o > 0 y <id
         #if int(numberHash) > number_predecessor and int(numberHash) <= id_server:
         
         #if is the node in the border
         if number_predecessor > id_server:
             if (numberHash > number_predecessor) or (numberHash <= id_server):
                 socket.send_json({"response": "true", "ip": mydir})
-                print('send socket to client')
+                print('IS MINE')
             else:
                 socket.send_json({"response": "false", "ip": successor})
-                print('send socket to client')
+                print('isn´t mine')
+
+        #if is the unique node
+        elif (number_predecessor == int(self.number_server)) and (number_successor == int(self.number_server)):
+            socket.send_json({"response": "true", "ip": mydir})
+            print('IS MINE')
         else:
-            if  (numberHash > number_predecessor) and (numberHash <= id_server):
+            if (numberHash > number_predecessor) and (numberHash <= id_server):
                 socket.send_json({"response": "true", "ip": mydir})
-                print('send socket to client')
+                print('IS MINE')
             else:
                 socket.send_json({"response": "false", "ip": successor})
-                print('send socket to client')
+                print('isn´t mine')
 
     def isMyRange(self,socket, number_node, address_request):
         print('address request' + address_request)
@@ -342,8 +344,6 @@ if __name__ == "__main__":
     server = FServer()
     #proxy.servers()
     server.run()
-    #TODO cada server debe tener su nombre aleatorio
-    #TODO poner esto en el cliente
 
     """"
     ip = '192.236.2.78:2500'

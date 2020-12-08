@@ -36,7 +36,7 @@ class Hash():
 class Client():
     def __init__(self):
         self.context = zmq.Context()
-        self.hashobj = Hash("sha256")
+        self.hashobj = Hash("sha1")
 
     def run(self):
         #socket = self.context.socket(zmq.REQ) #REQ este socket va a ser utilizado para hacer solicitudes
@@ -48,7 +48,7 @@ class Client():
             filename = sys.argv[2]
             
             hash_whole_file = self.complethash(filename)
-            #en la fun complethash guardar el hash en el f.chord
+            #TODO en la fun complethash guardar el hash en el f.chord
             self.saveAndSendHashes(filename, address_to_connect)
             #self.sendDataServers(info_send)
             #socket.close()
@@ -70,9 +70,11 @@ class Client():
                 if not partbytes:
                     break
                 parthash= self.hashobj.getHash(partbytes)
+                # numberHash =  int(parthash,16)
+                # print(type(numberHash))
+                # print(numberHash)
                 #print(type(parthash))
                 #guardar en el f.chord
-                #TODO send to a node
                 #get number of the hash and send? this can do it the node
                 self.findSuccesor(parthash, address_to_connect, partbytes)
                 #print(ip_to_send)
@@ -128,7 +130,6 @@ class Client():
             bytes = f.read(partsize)
         return bytes
     
-    #TODO do function
     def buildFile(self, parthash):
         pass
         """
