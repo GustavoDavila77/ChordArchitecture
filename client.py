@@ -1,5 +1,4 @@
 """///// Comands for run fclient //////
-
 upload 
 - python fclient.py upload archivotoupload dir_node
 - example
@@ -47,8 +46,10 @@ class Client():
             #socket.connect("tcp://{}".format(address_to_connect) #conexión con el nodo principal 
             filename = sys.argv[2]
             
-            hash_whole_file = self.complethash(filename)
+            hash_whole_file, completbytes = self.complethash(filename)
+
             #TODO en la fun complethash guardar el hash en el f.chord
+            self.createChord(filename,hash_whole_file)
             self.saveAndSendHashes(filename, address_to_connect)
             #self.sendDataServers(info_send)
             #socket.close()
@@ -75,7 +76,7 @@ class Client():
                 # print(numberHash)
                 #print(type(parthash))
                 #guardar en el f.chord
-                #get number of the hash and send? this can do it the node
+                self.updateHashChord(filename, parthash)
                 self.findSuccesor(parthash, address_to_connect, partbytes)
                 #print(ip_to_send)
 
@@ -114,6 +115,24 @@ class Client():
             #ip of successor
             self.findSuccesor(hash,resp['ip'], partbytes)
 
+    def createChord(self,filename,complete_hash):
+        name_file = filename.split('.')[0]
+        f = open(name_file+".chord", "w")
+        f.close()
+        f = open(name_file+".chord", "r")
+        lines = f.readlines()
+        lines.insert(0,name_file)
+        lines.insert(0,complete_hash+'\n')
+        
+        f.close()
+        f = open(name_file+".chord", "w")
+        f.writelines(lines)
+        f.close()
+
+    def updateHashChord(self,name,hash):
+        filename =  name.split('.')[0]
+        with open(filename+".chord", 'a') as f:
+            f.write('\n'+hash)
 
     def complethash(self,filename):
         #TODO save complethash in f.chord
@@ -121,7 +140,7 @@ class Client():
         with open(filename, 'rb') as f:
             completbytes = f.read() #obtengo todos los bytes
             hash= self.hashobj.getHash(completbytes) #hash de los bytes
-            return hash
+            return hash, completbytes
     
     def readPart(self,filename, index):
         bytes = 0
@@ -142,4 +161,3 @@ class Client():
 if __name__ == "__main__":
     client = Client()
     client.run()
-    
