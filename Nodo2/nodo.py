@@ -41,8 +41,6 @@ class FServer():
             random_str = self.randomString(self.ip_and_port)
             number_server_int = int(self.hashString(random_str),16)
             self.number_server = str(number_server_int)
-            #self.number_server = "37893173180865016123064796019639841985096597669"
-
             
             socket = self.initSocket()
             if self.type_server == "alpha":
@@ -54,7 +52,6 @@ class FServer():
                 self.saveServer()
                 self.findSuccessor(address_to_connect)
                 #mirar si el nodo tiene archivos que pertenezcan al nuevo nodo
-                #self.filesReview()
                 self.receive(socket)
 
 
@@ -132,8 +129,6 @@ class FServer():
             json.dump(servers_dict, f, indent=4)
             f.close()
 
-            #self.filesReview(address_to_connect)
-
         elif resp['response'] == 'true':
             print("find responsible")
             ip_predecessor = resp['predecessor']
@@ -159,8 +154,6 @@ class FServer():
             print(ans)
             socket.close()
 
-            #self.filesReview(address_to_connect)
-
         elif resp['response'] == 'false':
             print("find new responsible")
             socket.close()
@@ -168,24 +161,35 @@ class FServer():
         
         print(resp)     
 
-    def filesReview(self, address_to_connect):
-        print('entre en filesReview')
+    def sendFilesReview(self):
+        f = open('info_server.json','r')
+        servers_dict = json.load(f)
+        f.close()
+        
+        number_predecessor = int(servers_dict['number_predecessor'])
+        predecessor = servers_dict['predecessor']
+        address_to_connect = predecessor
+
         socket = self.context.socket(zmq.REQ)
         print("ip fileReview: "+ address_to_connect) 
         socket.connect("tcp://{}".format(address_to_connect))
-        socket.send_multipart([b'filesreview'])
-        ans = b'x'
+        #socket.send_multipart([b'reviewsave'])
 
-        while ans[0] != b'yanomas':
-            ans = socket.recv_multipart()
-        
-            if ans[0] == b'newparthash':
-                print('va funcionando con los arrays, aparentemente')
-            else:
-                print('no hay que repartir archivos')
+        diruser = "files/"
+        directorio = os.listdir(diruser)
+        print(directorio)
 
-    def reviewSave(self, socket):
-        socket.send_multipart([b'recibi'])
+        if directorio:
+            for parthash in directorio:
+                numberHash = int(parthash,16)
+                if numberHash <= number_predecessor:
+                    with open('files/'+parthash, 'rb') as f:
+                        completbytes = f.read() #obtengo todos los bytes
+                    socket.send_multipart([b'reviewsave', parthash.encode('utf-8'), completbytes])
+                    resp = socket.recv_multipart()
+                    if resp[0] == b'recibi':
+                        print('New nodo recibio parthash')
+        socket.close()
 
     def receive(self,socket):
         print("waiting messages..")
@@ -205,7 +209,7 @@ class FServer():
                 numberHash =  int(message[1],16)
                 print(numberHash)
                 self.isMyResponsability(socket, numberHash)
-
+            
             elif message[0] == b'reviewsave':
                 parthash = message[1].decode('utf-8')
 
@@ -213,18 +217,6 @@ class FServer():
                     f.write(message[2])
                     socket.send_multipart([b'recibi'])
                     print('Recibí new hash')
-
-            elif message[0] == b'filesreview':
-                #TODO obtener la lista de los hash en folder files
-                diruser = "files/"
-                directorio = os.listdir(diruser)
-                print(directorio)
-                archivos = []
-
-                for f in directorio:
-                    archivos.append(f.encode('utf-8'))
-
-                socket.send_multipart(archivos)
 
             elif message[0] == b'upload':  
                 name_parthash = message[1].decode('utf-8')
@@ -311,7 +303,9 @@ class FServer():
             json.dump(servers_dict, f, indent=4)
             f.close()
             socket.send_json({"response": "true", "successor": "", "ip": self.ip_and_port, "number": self.number_server, "first": 'true'})
-        
+            
+            #Send files that don´t belong my range, to new nodo 
+            self.sendFilesReview()
         else:
 
             if int(number_node) > number_predecessor and int(number_node) <= id_server:
@@ -323,7 +317,10 @@ class FServer():
                 json.dump(servers_dict, f, indent=4)
                 f.close()
                 socket.send_json({"response": "true", "successor": "", "ip": self.ip_and_port, "number": self.number_server, "first": 'false', "predecessor": ip_predecessor, "number_predecessor": number_predecessor})
-            
+                
+                #Send files that don´t belong my range, to new nodo
+                self.sendFilesReview()
+
             #si mi predecesor es mayor a mi id_server es porque mi node esta es respon del border
             elif number_predecessor > id_server:
                 print("esta en el rango")
@@ -333,6 +330,10 @@ class FServer():
                 json.dump(servers_dict, f, indent=4)
                 f.close()
                 socket.send_json({"response": "true", "successor": "", "ip": self.ip_and_port, "number": self.number_server, "first": 'false', "predecessor": ip_predecessor, "number_predecessor": number_predecessor})
+
+                #Send files that don´t belong my range, to new nodo 
+                self.sendFilesReview()
+
             else:
                 print("no esta en el rango")
                 socket.send_json({"response": "false", "ip_successor": ip_successor, "first": 'false'}) 
@@ -380,24 +381,5 @@ class FServer():
 
 if __name__ == "__main__":
     server = FServer()
-    #proxy.servers()
     server.run()
-
-    """"
-    ip = '192.236.2.78:2500'
-    sids = [server.randomString(ip) for x in range(3)]
-    ids = [int(server.hashString(s),16) for s in sids]
-    ids.sort()
-
-    server.rangeResponsibility(ids)
-    #server 0: 37893173180865016123064796019639841985096597669
-    #server 1: 515748800960014143714155257729430307158535308957
-    #server 2: 647584871384597889933400031157176508445575663970
-
-    
-    Range Responsability
-    0 resp (647584871384597889933400031157176508445575663970, 37893173180865016123064796019639841985096597669)
-    1 resp (37893173180865016123064796019639841985096597669, 515748800960014143714155257729430307158535308957)
-    2 resp (515748800960014143714155257729430307158535308957, 647584871384597889933400031157176508445575663970)
-    """
     
