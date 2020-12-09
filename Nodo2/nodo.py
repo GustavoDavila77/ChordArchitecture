@@ -53,7 +53,8 @@ class FServer():
                 print("join to ring")
                 self.saveServer()
                 self.findSuccessor(address_to_connect)
-
+                #mirar si el nodo tiene archivos que pertenezcan al nuevo nodo
+                #self.filesReview()
                 self.receive(socket)
 
 
@@ -130,6 +131,9 @@ class FServer():
             f = open('info_server.json','w')
             json.dump(servers_dict, f, indent=4)
             f.close()
+
+            #self.filesReview(address_to_connect)
+
         elif resp['response'] == 'true':
             print("find responsible")
             ip_predecessor = resp['predecessor']
@@ -153,6 +157,9 @@ class FServer():
             socket.send_multipart([b'newsuccessor', self.ip_and_port.encode('utf-8'), self.number_server.encode('utf-8')])
             ans = socket.recv_json()
             print(ans)
+            socket.close()
+
+            #self.filesReview(address_to_connect)
 
         elif resp['response'] == 'false':
             print("find new responsible")
@@ -161,6 +168,24 @@ class FServer():
         
         print(resp)     
 
+    def filesReview(self, address_to_connect):
+        print('entre en filesReview')
+        socket = self.context.socket(zmq.REQ)
+        print("ip fileReview: "+ address_to_connect) 
+        socket.connect("tcp://{}".format(address_to_connect))
+        socket.send_multipart([b'filesreview'])
+        ans = b'x'
+
+        while ans[0] != b'yanomas':
+            ans = socket.recv_multipart()
+        
+            if ans[0] == b'newparthash':
+                print('va funcionando con los arrays, aparentemente')
+            else:
+                print('no hay que repartir archivos')
+
+    def reviewSave(self, socket):
+        socket.send_multipart([b'recibi'])
 
     def receive(self,socket):
         print("waiting messages..")
@@ -180,6 +205,26 @@ class FServer():
                 numberHash =  int(message[1],16)
                 print(numberHash)
                 self.isMyResponsability(socket, numberHash)
+
+            elif message[0] == b'reviewsave':
+                parthash = message[1].decode('utf-8')
+
+                with open('files/'+parthash, 'wb') as f:
+                    f.write(message[2])
+                    socket.send_multipart([b'recibi'])
+                    print('Recibí new hash')
+
+            elif message[0] == b'filesreview':
+                #TODO obtener la lista de los hash en folder files
+                diruser = "files/"
+                directorio = os.listdir(diruser)
+                print(directorio)
+                archivos = []
+
+                for f in directorio:
+                    archivos.append(f.encode('utf-8'))
+
+                socket.send_multipart(archivos)
 
             elif message[0] == b'upload':  
                 name_parthash = message[1].decode('utf-8')
