@@ -1,14 +1,16 @@
-#comand
-# python nodo.py  none localhost:4000 6 alpha
+# python nodo.py dirtoconnect mydir typenode
 
-#node
-# python nodo.py localhost:4000 localhost:5000 6 none
+# example comand alpha node
+# python nodo.py  none localhost:4000 alpha
+
+# example normal node
+# python nodo.py localhost:4000 localhost:5000 none
 
 #node 2 
-# python nodo.py localhost:5000 localhost:6000 6 none
+# python nodo.py localhost:5000 localhost:6000 none
 
 #node 3 
-# python nodo.py localhost:4000 localhost:7000 6 none
+# python nodo.py localhost:4000 localhost:7000 none
 
 #client
 # python client.py upload underground.mp4 localhost:4000
@@ -35,9 +37,9 @@ class FServer():
             self.ip_and_port = sys.argv[2]
             self.ip_server = self.ip_and_port.split(':')[0]
             self.port_server = self.ip_and_port.split(':')[1]
-            self.bits = sys.argv[3]
+            #self.bits = sys.argv[3]
             #self.number_server = sys.argv[4]
-            self.type_server = sys.argv[4]
+            self.type_server = sys.argv[3]
 
             random_str = self.randomString(self.ip_and_port)
             number_server_int = int(self.hashString(random_str),16)
@@ -71,11 +73,6 @@ class FServer():
         try:
             sys.argv[3]
         except:
-            print("Input bits")
-            boolean = False
-        try:
-            sys.argv[4]
-        except:
             print("Input node type, if first node: type is alpha, else write whatever")
             boolean = False
             
@@ -89,8 +86,8 @@ class FServer():
         return socket
 
     def saveServer(self, successor="", predecessor=""):
-        first_upper_limit = math.pow(2,int(self.bits))
-        print(first_upper_limit)
+        #first_upper_limit = math.pow(2,int(self.bits))
+        #print(first_upper_limit)
         info_server = {
             "id_server": self.number_server,
             "ip": self.ip_server,
@@ -263,7 +260,8 @@ class FServer():
         
         #if is the node in the border
         if number_predecessor > id_server:
-            if (numberHash > number_predecessor) or (numberHash <= id_server):
+            upper_limit = math.pow(2,160)
+            if (numberHash > number_predecessor and numberHash <= upper_limit) or (numberHash >=0 and numberHash <= id_server):
                 socket.send_json({"response": "true", "ip": mydir})
                 print('IS MINE')
             else:

@@ -1,6 +1,6 @@
 """///// Comands for run fclient //////
 upload 
-- python fclient.py upload archivotoupload dir_node
+- python fclient.py upload archivotoupload dir_node_to_connect
 - example
     python client.py upload underground.mp4 localhost:4000
 """
