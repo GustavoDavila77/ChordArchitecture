@@ -21,6 +21,7 @@ from random import choice, randrange
 import string
 import hashlib
 import math
+from os import remove
 
 class FServer():
     #en los argumentos recivir la carpeta donde va a se almacenado todo
@@ -186,6 +187,7 @@ class FServer():
                     with open('files/'+parthash, 'rb') as f:
                         completbytes = f.read() #obtengo todos los bytes
                     socket.send_multipart([b'reviewsave', parthash.encode('utf-8'), completbytes])
+                    remove('files/'+parthash)
                     resp = socket.recv_multipart()
                     if resp[0] == b'recibi':
                         print('New nodo recibio parthash')
